@@ -10,7 +10,11 @@ public class GenerateFaces : MonoBehaviour {
 
     void Start()
     {
+        RebuildMesh();
+    }
 
+    public void RebuildMesh()
+    {
         mesh = new Mesh();
 
         vertexArray = new Vector3[vertexGridXSize * vertexGridYSize];
