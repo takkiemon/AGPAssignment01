@@ -441,8 +441,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mesh: {fileID: 854344506}
-  vertexGridXSize: 5
-  vertexGridYSize: 5
+  resolution: 5
+  height: 5
+  radius: 5
 --- !u!33 &1263782913
 MeshFilter:
   m_ObjectHideFlags: 0
