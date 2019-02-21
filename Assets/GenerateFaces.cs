@@ -11,32 +11,27 @@ public class GenerateFaces : MonoBehaviour {
 
     void Start()
     {
-        RebuildMesh();
+        //RebuildMesh();
     }
 
     public void RebuildMesh()
     {
         mesh = new Mesh();
 
-        if (resolution < 3)
-        {
-            resolution = 3;
-        }
-        if (resolution > 10)
-        {
-            resolution = 10;
-        }
+        resolution = Mathf.Clamp(resolution, 3, 400);
 
         vertexArray = new Vector3[2 * (1 + resolution)];
         int[] triangles = new int[resolution * 4 * 3];//fix number overflow (initialization of int can be a negative number, as is now)
 
-        vertexArray[0] = new Vector3(0, 0, 0);
-        vertexArray[1] = new Vector3(0, height, 0);
+        vertexArray[2 * (1 + resolution) - 1] = new Vector3(0, .5f * height, 0);
+        vertexArray[2 * (1 + resolution) - 2] = new Vector3(0, -.5f * height, 0);
 
-        for(int i = 0; i < resolution; i++)
+        for (int i = 0; i < resolution; i++)
         {
-            Debug.Log("about to create Vertex[" + i + "]: Vector3(" + Mathf.Cos(i) * resolution + ", 0, " + Mathf.Sin(i) * resolution + ").");
-            vertexArray[i] = new Vector3(Mathf.Cos(i) * resolution, 0, Mathf.Sin(i) * resolution);//new vector3(cosine(resolution), sine(resolution))
+            //Debug.Log("About to create vertex(" + Mathf.Cos(i / resolution * 2 * Mathf.PI) * radius + "(Mathf.Cos(" + i + " / " + resolution + " * 2 * Mathf.PI) * " + radius + "), 0, " + Mathf.Sin(i / resolution * 2 * Mathf.PI) * radius + "(Mathf.Sin(" + i + " / " + resolution + " * 2 * Mathf.PI) * " + radius + ")).");
+            float cornerAngle = (float)i / resolution * 2 * Mathf.PI;
+            vertexArray[i] = new Vector3(Mathf.Cos(cornerAngle) * radius, .5f * height, Mathf.Sin(cornerAngle) * radius);
+            vertexArray[i + resolution] = new Vector3(Mathf.Cos(cornerAngle) * radius, -.5f * height, Mathf.Sin(cornerAngle) * radius);
         }
 
         /*
@@ -71,11 +66,20 @@ public class GenerateFaces : MonoBehaviour {
         GetComponent<MeshFilter>().mesh = mesh;
     }
 
-    private void OnDrawGizmos()
+    public void ClearMesh()
+    {
+        mesh = new Mesh
+        {
+            vertices = new Vector3[0],
+            triangles = new int[0]
+        };
+        GetComponent<MeshFilter>().mesh = mesh;
+    }
+
+    private void OnDrawGizmos()//the ggizmo only displays the vertices of the local mesh variable and not 'GetComponent<MeshFilter>().mesh'
     {
         Gizmos.color = Color.yellow;
 
-        mesh = GetComponent<MeshFilter>().mesh;
         for (int i = 0; i < mesh.vertices.Length; i++)
         {
             Gizmos.DrawSphere(mesh.vertices[i], .2f);

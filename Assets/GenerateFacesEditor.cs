@@ -16,5 +16,9 @@ public class GenerateFacesEditor : Editor {
         {
             meshObject.RebuildMesh();
         }
+        if (GUILayout.Button("clearMesh"))
+        {
+            meshObject.ClearMesh();
+        }
     }
 }
