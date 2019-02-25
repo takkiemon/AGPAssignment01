@@ -4,27 +4,34 @@ using UnityEngine;
 
 public class GenerateFaces : MonoBehaviour {
 
-    public bool showVerteces;
+    public bool showVertices;
     public Mesh mesh;
+    public Material mat;
     public int resolution;
     public float height, radius;
     Vector3[] vertexArray;
     int trisPerVerts = 12;
+    int[] triangles;
+    Vector2[] uvs;
+    public bool showMesh;
 
     void Start()
     {
-        showVerteces = true;
+        showVertices = true;
+        showMesh = true;
         //RebuildMesh();
     }
 
     public void RebuildMesh()
     {
+        showMesh = true;
         mesh = new Mesh();
 
         resolution = Mathf.Clamp(resolution, 1, 400);
 
         vertexArray = new Vector3[2 * (1 + resolution)];
-        int[] triangles = new int[resolution * trisPerVerts];//fix number overflow (initialization of int can be a negative number, as is now)
+        triangles = new int[resolution * trisPerVerts];//fix number overflow (initialization of int can be a negative number, as is now)
+        uvs = new Vector2[vertexArray.Length];
 
         vertexArray[2 * (1 + resolution) - 1] = new Vector3(0, .5f * height, 0);
         vertexArray[2 * (1 + resolution) - 2] = new Vector3(0, -.5f * height, 0);
@@ -83,6 +90,13 @@ public class GenerateFaces : MonoBehaviour {
             }
         }
 
+        for (int i = 0; i < uvs.Length; i++)
+        {
+            uvs[i] = new Vector2(vertexArray[i].x, vertexArray[i].z);
+        }
+
+        //uvs[x + (gridX * y)] = new Vector2((float)x / (gridX - 1), (float)y / (gridY - 1));
+
         /*
         for (int y = 0; y < vertexGridYSize; y++)
         {
@@ -110,13 +124,23 @@ public class GenerateFaces : MonoBehaviour {
         */
 
         mesh.vertices = vertexArray;
+        mesh.uv = uvs;
         mesh.triangles = triangles;
 
+        mesh.RecalculateNormals();
+
         GetComponent<MeshFilter>().mesh = mesh;
+        gameObject.GetComponent<Renderer>().material = mat;
+    }
+
+    public void Update()
+    {
+        RebuildMesh();
     }
 
     public void ClearMesh()
     {
+        showMesh = false;
         mesh = new Mesh
         {
             vertices = new Vector3[0],
@@ -128,7 +152,7 @@ public class GenerateFaces : MonoBehaviour {
     private void OnDrawGizmos()//the ggizmo only displays the vertices of the local mesh variable and not 'GetComponent<MeshFilter>().mesh'
     {
         Gizmos.color = Color.yellow;
-        if (showVerteces)
+        if (showVertices)
         {
             for (int i = 0; i < mesh.vertices.Length; i++)
             {
