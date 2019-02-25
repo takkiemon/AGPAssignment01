@@ -16,7 +16,7 @@ public class GenerateFaces : MonoBehaviour
     Vector3[] sideVertexArray;
     int[] circleTriangles;
     int[] sideTriangles;
-    Vector2[] uvs;
+    public Vector2[] uvs;
     public Vector3[] totalVertices;
     public int[] totalTriangles;
 
@@ -103,6 +103,7 @@ public class GenerateFaces : MonoBehaviour
             }
         }
 
+
         for (int triIndex = 0, vertIndex = 0; triIndex < sideTriangles.Length && vertIndex < sideVertexArray.Length; triIndex += 6, vertIndex++)
         {
             if (triIndex == (resolution - 1) * 6)//if we're at the last vertex of the circle
@@ -125,16 +126,6 @@ public class GenerateFaces : MonoBehaviour
                 sideTriangles[triIndex + 4] = vertIndex + resolution + 1;
                 sideTriangles[triIndex + 5] = vertIndex + resolution;
             }
-        }
-
-        //map uvs
-        for (int i = 0; i < circleVertexArray.Length; i++)
-        {
-            uvs[i] = new Vector2(circleVertexArray[i].x, circleVertexArray[i].z);
-        }
-        for (int i = 0; i < sideVertexArray.Length; i++)
-        {
-            uvs[i + circleVertexArray.Length] = new Vector2(sideVertexArray[i].x, sideVertexArray[i].z);
         }
 
         //uvs[x + (gridX * y)] = new Vector2((float)x / (gridX - 1), (float)y / (gridY - 1));
@@ -186,10 +177,22 @@ public class GenerateFaces : MonoBehaviour
         }
 
         mesh.vertices = totalVertices;
-        mesh.uv = uvs;
         mesh.triangles = totalTriangles;
 
         mesh.RecalculateNormals();
+        
+        //map uvs
+        for (int i = 0; i < circleVertexArray.Length; i++)
+        {
+            uvs[i] = new Vector2(circleVertexArray[i].x, circleVertexArray[i].z);
+        }
+        for (int i = 0; i < sideVertexArray.Length; i++)
+        {
+            uvs[i + circleVertexArray.Length] = new Vector2(Mathf.Atan2(sideVertexArray[i].x, sideVertexArray[i].z) / (-2f * Mathf.PI), Mathf.Asin(sideVertexArray[i].y) / Mathf.PI + 0.5f);
+            //uvs[i + circleVertexArray.Length] = new Vector2(sideVertexArray[i].x, sideVertexArray[i].z);
+        }
+
+        mesh.uv = uvs;
 
         GetComponent<MeshFilter>().mesh = mesh;
         gameObject.GetComponent<Renderer>().material = mat;
