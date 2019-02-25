@@ -1,16 +1,19 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 
 public class GenerateFaces : MonoBehaviour
 {
-
     public Mesh mesh;
     public Material mat;
     public int resolution;
     public float height, radius;
     public bool showVertices;
     public bool showMesh;
+    public bool showCircleVertices;
+    public bool showSideVertices;
+    public bool showVertexNumbers;
 
     Vector3[] circleVertexArray;
     Vector3[] sideVertexArray;
@@ -59,7 +62,7 @@ public class GenerateFaces : MonoBehaviour
         {
             if (triIndex == (resolution - 1) * 6)//if we're at the last vertex of the circle
             {
-                //build a triangle on the top circle from the last vertex on that circle
+                /*/build a triangle on the top circle from the last vertex on that circle
                 circleTriangles[triIndex] = vertIndex;
                 circleTriangles[triIndex + 1] = 2 * (1 + resolution) - 1;
                 circleTriangles[triIndex + 2] = 0;
@@ -68,7 +71,7 @@ public class GenerateFaces : MonoBehaviour
                 circleTriangles[triIndex + 3] = vertIndex + resolution;
                 circleTriangles[triIndex + 4] = resolution;
                 circleTriangles[triIndex + 5] = 2 * (1 + resolution) - 2;
-
+                */
                 /*
                 //build quad on the side from the last vertices of the circles
                 circleTriangles[triIndex + 6] = vertIndex;
@@ -180,16 +183,18 @@ public class GenerateFaces : MonoBehaviour
         mesh.triangles = totalTriangles;
 
         mesh.RecalculateNormals();
-        
+
+        float uvPerResolution = 1 / resolution;
+
         //map uvs
         for (int i = 0; i < circleVertexArray.Length; i++)
         {
-            uvs[i] = new Vector2(circleVertexArray[i].x, circleVertexArray[i].z);
+            uvs[i] = new Vector2(circleVertexArray[i].x, circleVertexArray[i].z).normalized;
         }
-        for (int i = 0; i < sideVertexArray.Length; i++)
+        for (int i = 0; i < sideVertexArray.Length; i += 2)
         {
-            uvs[i + circleVertexArray.Length] = new Vector2(Mathf.Atan2(sideVertexArray[i].x, sideVertexArray[i].z) / (-2f * Mathf.PI), Mathf.Asin(sideVertexArray[i].y) / Mathf.PI + 0.5f);
-            //uvs[i + circleVertexArray.Length] = new Vector2(sideVertexArray[i].x, sideVertexArray[i].z);
+            uvs[i + circleVertexArray.Length] = new Vector2(0, uvPerResolution * i);
+            uvs[i + circleVertexArray.Length + 1] = new Vector2(1, uvPerResolution * i);
         }
 
         mesh.uv = uvs;
@@ -200,7 +205,14 @@ public class GenerateFaces : MonoBehaviour
 
     public void Update()
     {
-        RebuildMesh();
+        if (showMesh)
+        {
+            RebuildMesh();
+        }
+        else
+        {
+            ClearMesh();
+        }
     }
 
     public void ClearMesh()
@@ -214,14 +226,33 @@ public class GenerateFaces : MonoBehaviour
         GetComponent<MeshFilter>().mesh = mesh;
     }
 
-    private void OnDrawGizmos()//the ggizmo only displays the vertices of the local mesh variable and not 'GetComponent<MeshFilter>().mesh'
+    private void OnDrawGizmos()//the gizmo only displays the vertices of the local mesh variable and not 'GetComponent<MeshFilter>().mesh'
     {
         Gizmos.color = Color.yellow;
         if (showVertices)
         {
-            for (int i = 0; i < mesh.vertices.Length; i++)
+            if (showVertexNumbers)
             {
-                Gizmos.DrawSphere(mesh.vertices[i], .1f);
+                for (int i = 0; i < totalVertices.Length; i++)
+                {
+                    Handles.Label(totalVertices[i], i.ToString());
+                }
+            }
+            if (showCircleVertices)
+            {
+                for (int i = 0; i < circleVertexArray.Length; i++)
+                {
+                    Handles.Label(circleVertexArray[i], uvs[i].ToString());
+                    Gizmos.DrawSphere(circleVertexArray[i], .1f);
+                }
+            }
+            if (showSideVertices)
+            {
+                for (int i = 0; i < sideVertexArray.Length; i++)
+                {
+                    Handles.Label(sideVertexArray[i], uvs[i + circleVertexArray.Length].ToString());
+                    Gizmos.DrawSphere(sideVertexArray[i], .1f);
+                }
             }
         }
     }
