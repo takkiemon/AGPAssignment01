@@ -2,22 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GenerateFaces : MonoBehaviour {
+public class GenerateFaces : MonoBehaviour
+{
 
+    public bool showVertices;
     public Mesh mesh;
     public Material mat;
-    public int circleSubdivisions;
-    public int lengthSubdivisions;
+    public int resolution;
     public float height, radius;
-    public bool showVertices;
-    public bool showMesh;
-
-    Vector3[] vertexArray;
+    Vector3[] circleVertexArray;
+    Vector3[] sideVertexArray;
     int trisPerVerts = 12;
-    int[] triangles;
+    int[] circleTriangles;
+    int[] sideTriangles;
     Vector2[] uvs;
-    float layerSteps;
-    float cornerAngle;
+    public bool showMesh;
 
     void Start()
     {
@@ -28,180 +27,80 @@ public class GenerateFaces : MonoBehaviour {
 
     public void RebuildMesh()
     {
-
-        GetComponent<MeshFilter>().mesh = mesh;
-        mesh.Clear();
+        showMesh = true;
         mesh = new Mesh();
 
-        circleSubdivisions = Mathf.Abs(circleSubdivisions);
-        lengthSubdivisions = Mathf.Abs(lengthSubdivisions);
+        resolution = Mathf.Clamp(resolution, 1, 400);
 
-        layerSteps = (float) 1 / (lengthSubdivisions + 1);
+        circleVertexArray = new Vector3[2 * (1 + resolution)];
+        sideVertexArray = new Vector3[2 * resolution];
+        circleTriangles = new int[resolution * trisPerVerts];//fix number overflow (initialization of int can be a negative number, as is now)
+        sideTriangles = new int[resolution * 6];
+        uvs = new Vector2[circleVertexArray.Length];
 
-        vertexArray = new Vector3[2 + ((4 + lengthSubdivisions) * circleSubdivisions)];
-        //triangles = new int[circleSubdivisions * trisPerVerts];//fix number overflow (initialization of int can be a negative number, as is now)
-        //triangles = new int[(2 + lengthSubdivisions) * circleSubdivisions * 6];//fix number overflow (initialization of int can be a negative number, as is now)
-        triangles = new int[circleSubdivisions * 12 + (lengthSubdivisions + 2) * circleSubdivisions * 6];
-        uvs = new Vector2[vertexArray.Length];
+        circleVertexArray[2 * (1 + resolution) - 1] = new Vector3(0, .5f * height, 0);
+        circleVertexArray[2 * (1 + resolution) - 2] = new Vector3(0, -.5f * height, 0);
 
-        //the last two vertices in the array are reserved for the centerpoints of the top and bottom circles
-        vertexArray[vertexArray.Length - 1] = new Vector3(0, .5f * height, 0);
-        vertexArray[vertexArray.Length - 2] = new Vector3(0, -.5f * height, 0);
-
-
-
-        for (int j = 0; j <= lengthSubdivisions + 1; j++)
-        {
-            for (int i = 0; i < circleSubdivisions; i++)
-            {
-                cornerAngle = (float)i / circleSubdivisions * 2 * Mathf.PI;
-                vertexArray[j * circleSubdivisions + i] = new Vector3(Mathf.Cos(cornerAngle) * radius, (-j * layerSteps + .5f) * height, Mathf.Sin(cornerAngle) * radius);
-                //vertexArray[i + circleSubdivisions] = new Vector3(Mathf.Cos(cornerAngle) * radius, -.5f * height, Mathf.Sin(cornerAngle) * radius);
-            }
-        }
-
-        /*for (int i = 0; i < circleSubdivisions; i++)
+        for (int i = 0; i < resolution; i++)
         {
             //Debug.Log("About to create vertex(" + Mathf.Cos(i / resolution * 2 * Mathf.PI) * radius + "(Mathf.Cos(" + i + " / " + resolution + " * 2 * Mathf.PI) * " + radius + "), 0, " + Mathf.Sin(i / resolution * 2 * Mathf.PI) * radius + "(Mathf.Sin(" + i + " / " + resolution + " * 2 * Mathf.PI) * " + radius + ")).");
-            float cornerAngle = (float)i / circleSubdivisions * 2 * Mathf.PI;
-            vertexArray[i] = new Vector3(Mathf.Cos(cornerAngle) * radius, .5f * height, Mathf.Sin(cornerAngle) * radius);
-            vertexArray[i + circleSubdivisions] = new Vector3(Mathf.Cos(cornerAngle) * radius, -.5f * height, Mathf.Sin(cornerAngle) * radius);
-        }*/
+            float cornerAngle = (float)i / resolution * 2 * Mathf.PI;
+            circleVertexArray[i] = new Vector3(Mathf.Cos(cornerAngle) * radius, .5f * height, Mathf.Sin(cornerAngle) * radius);
+            sideVertexArray[i] = circleVertexArray[i];
+            circleVertexArray[i + resolution] = new Vector3(Mathf.Cos(cornerAngle) * radius, -.5f * height, Mathf.Sin(cornerAngle) * radius);
+            sideVertexArray[i + resolution] = circleVertexArray[i + resolution];
+        }
 
         //Debug.Log("triangleCount: " + triangles.Length + ", vertexCount: " + vertexArray.Length + ", resolution: " + resolution + ".");
 
-        /*for (int triIndex = 0, vertIndex = 0; triIndex < triangles.Length && vertIndex < vertexArray.Length; triIndex += trisPerVerts, vertIndex++)
+        for (int triIndex = 0, vertIndex = 0; triIndex < circleTriangles.Length && vertIndex < circleVertexArray.Length; triIndex += trisPerVerts, vertIndex++)
         {
-            if (triIndex == (circleSubdivisions - 1) * trisPerVerts)//if we're at the last vertex of the circle
+            if (triIndex == (resolution - 1) * trisPerVerts)//if we're at the last vertex of the circle
             {
                 //build a triangle on the top circle from the last vertex on that circle
-                triangles[triIndex] = vertIndex;
-                triangles[triIndex + 1] = vertexArray.Length - 1;
-                triangles[triIndex + 2] = 0;
+                circleTriangles[triIndex] = vertIndex;
+                circleTriangles[triIndex + 1] = 2 * (1 + resolution) - 1;
+                circleTriangles[triIndex + 2] = 0;
 
                 //build a triangle on the bottom circle from the last vertex on that circle
-                triangles[triIndex + 3] = vertIndex + circleSubdivisions;
-                triangles[triIndex + 4] = circleSubdivisions;
-                triangles[triIndex + 5] = vertexArray.Length - 2;
+                circleTriangles[triIndex + 3] = vertIndex + resolution;
+                circleTriangles[triIndex + 4] = resolution;
+                circleTriangles[triIndex + 5] = 2 * (1 + resolution) - 2;
 
                 //build quad on the side from the last vertices of the circles
-                triangles[triIndex + 6] = vertIndex;
-                triangles[triIndex + 7] = 0;
-                triangles[triIndex + 8] = circleSubdivisions;
-                triangles[triIndex + 9] = vertIndex;
-                triangles[triIndex + 10] = circleSubdivisions;
-                triangles[triIndex + 11] = vertIndex + circleSubdivisions;
+                circleTriangles[triIndex + 6] = vertIndex;
+                circleTriangles[triIndex + 7] = 0;
+                circleTriangles[triIndex + 8] = resolution;
+                circleTriangles[triIndex + 9] = vertIndex;
+                circleTriangles[triIndex + 10] = resolution;
+                circleTriangles[triIndex + 11] = vertIndex + resolution;
             }
             else
             {
                 //build a triangle on the top circle
-                triangles[triIndex] = vertIndex;
-                triangles[triIndex + 1] = vertexArray.Length - 1;
-                triangles[triIndex + 2] = vertIndex + 1;
+                circleTriangles[triIndex] = vertIndex;
+                circleTriangles[triIndex + 1] = 2 * (1 + resolution) - 1;
+                circleTriangles[triIndex + 2] = vertIndex + 1;
 
                 //build a triangle on the bottom circle
-                triangles[triIndex + 3] = vertIndex + circleSubdivisions;
-                triangles[triIndex + 4] = vertIndex + circleSubdivisions + 1;
-                triangles[triIndex + 5] = vertexArray.Length - 2;
+                circleTriangles[triIndex + 3] = vertIndex + resolution;
+                circleTriangles[triIndex + 4] = vertIndex + resolution + 1;
+                circleTriangles[triIndex + 5] = 2 * (1 + resolution) - 2;
 
                 //build quad on the side
-                triangles[triIndex + 6] = vertIndex;
-                triangles[triIndex + 7] = vertIndex + 1;
-                triangles[triIndex + 8] = vertIndex + circleSubdivisions + 1;
-                triangles[triIndex + 9] = vertIndex;
-                triangles[triIndex + 10] = vertIndex + circleSubdivisions + 1;
-                triangles[triIndex + 11] = vertIndex + circleSubdivisions;
-            }
-        }*/
-
-        for (int triIndex = 0, vertIndex = 0; triIndex < triangles.Length && vertIndex < vertexArray.Length; triIndex += 6, vertIndex++)
-        {
-            if (triIndex == (circleSubdivisions - 1) * trisPerVerts)//if we're at the last vertex of the circle
-            {
-                //build a triangle on the top circle from the last vertex on that circle
-                triangles[triIndex] = vertIndex;
-                triangles[triIndex + 1] = vertexArray.Length - 1;
-                triangles[triIndex + 2] = 0;
-
-                //build a triangle on the bottom circle from the last vertex on that circle
-                triangles[triIndex + 3] = vertIndex + (1 + lengthSubdivisions) * circleSubdivisions;
-                triangles[triIndex + 4] = circleSubdivisions * (lengthSubdivisions + 1);
-                triangles[triIndex + 5] = vertexArray.Length - 2;
-            }
-            else
-            {
-                //build a triangle on the top circle
-                triangles[triIndex] = vertIndex;
-                triangles[triIndex + 1] = vertexArray.Length - 1;
-                triangles[triIndex + 2] = vertIndex + 1;
-
-                //build a triangle on the bottom circle
-                triangles[triIndex + 3] = vertIndex + circleSubdivisions;
-                triangles[triIndex + 4] = vertIndex + circleSubdivisions + 1;
-                triangles[triIndex + 5] = vertexArray.Length - 2;
+                circleTriangles[triIndex + 6] = vertIndex;
+                circleTriangles[triIndex + 7] = vertIndex + 1;
+                circleTriangles[triIndex + 8] = vertIndex + resolution + 1;
+                circleTriangles[triIndex + 9] = vertIndex;
+                circleTriangles[triIndex + 10] = vertIndex + resolution + 1;
+                circleTriangles[triIndex + 11] = vertIndex + resolution;
             }
         }
 
-        //build quads on the side
-        for (int j = 0, triIndex = circleSubdivisions * 6, vertIndex = 0; j <= lengthSubdivisions; j++)
-        {
-            for (int i = 0; i < circleSubdivisions; i++, triIndex += 6, vertIndex++)
-            {
-                Debug.Log("144vertIndex: " + vertIndex + ", triIndex: " + triIndex + ", i: " + i + ", j: " + j);
-                if ((vertIndex + 1) % circleSubdivisions == 0)//if we're at the last vertex of the circle
-                {
-                    //build quad on the side from the last vertices of the circles
-                    triangles[triIndex] = vertIndex;
-                    Debug.Log("148triangles.length: " + triangles.Length + ", triIndex: " + triIndex + ", i: " + i + ", j: " + j);
-                    if (j != 0)
-                    {
-                        int temp = vertIndex / j;
-                        triangles[triIndex + 1] = temp;
-                        triangles[triIndex + 2] = circleSubdivisions + temp;
-                        triangles[triIndex + 4] = circleSubdivisions + temp;
-                        triangles[triIndex + 5] = vertIndex + circleSubdivisions + temp;
-                    }
-                    else
-                    {
-                        triangles[triIndex + 1] = 0;
-                        triangles[triIndex + 2] = circleSubdivisions;
-                        triangles[triIndex + 4] = circleSubdivisions;
-                        triangles[triIndex + 5] = vertIndex + circleSubdivisions;
-                    }
-                    triangles[triIndex + 3] = vertIndex;
-                    
-                    /*
-                    triangles[triIndex + 6] = vertIndex;
-                    triangles[triIndex + 7] = vertIndex + 1;
-                    triangles[triIndex + 8] = vertIndex + circleSubdivisions + 1;
-                    triangles[triIndex + 9] = vertIndex;
-                    triangles[triIndex + 10] = vertIndex + circleSubdivisions + 1;
-                    triangles[triIndex + 11] = vertIndex + circleSubdivisions;
-                    */
-                }
-                else
-                {
-                    //build quad on the side
-                    Debug.Log("178triangles.length: " + triangles.Length + ", triIndex: " + triIndex + ", i: " + i + ", j: " + j);
-                    triangles[triIndex] = vertIndex;
-                    triangles[triIndex + 1] = vertIndex + 1;
-                    triangles[triIndex + 2] = vertIndex + circleSubdivisions + 1;
-                    triangles[triIndex + 3] = vertIndex;
-                    triangles[triIndex + 4] = vertIndex + circleSubdivisions + 1;
-                    triangles[triIndex + 5] = vertIndex + circleSubdivisions;
-                }
-            }
-        }
-
-        //create different uv for-loops: one for the circles and one for the sidequads
+        //map uvs
         for (int i = 0; i < uvs.Length; i++)
         {
-            //uvs[i] = new Vector2(vertexArray[i].x, vertexArray[i].z);
-            uvs[i] = new Vector2(Mathf.Atan2(vertexArray[i].x, vertexArray[i].z) / (-2f * Mathf.PI), Mathf.Asin(vertexArray[i].y) / Mathf.PI + 0.5f);
-            if (uvs[i].x < 0f)
-            {
-                uvs[i].x += 1f;
-            }
+            uvs[i] = new Vector2(circleVertexArray[i].x, circleVertexArray[i].z);
         }
 
         //uvs[x + (gridX * y)] = new Vector2((float)x / (gridX - 1), (float)y / (gridY - 1));
@@ -232,9 +131,9 @@ public class GenerateFaces : MonoBehaviour {
         }
         */
 
-        mesh.vertices = vertexArray;
+        mesh.vertices = circleVertexArray;
         mesh.uv = uvs;
-        mesh.triangles = triangles;
+        mesh.triangles = circleTriangles;
 
         mesh.RecalculateNormals();
 
@@ -244,21 +143,18 @@ public class GenerateFaces : MonoBehaviour {
 
     public void Update()
     {
-        if (showMesh)
-        {
-            RebuildMesh();
-        }
+        RebuildMesh();
     }
 
     public void ClearMesh()
     {
+        showMesh = false;
         mesh = new Mesh
         {
             vertices = new Vector3[0],
             triangles = new int[0]
         };
         GetComponent<MeshFilter>().mesh = mesh;
-        mesh.Clear();
     }
 
     private void OnDrawGizmos()//the ggizmo only displays the vertices of the local mesh variable and not 'GetComponent<MeshFilter>().mesh'
