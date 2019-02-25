@@ -27,7 +27,6 @@ public class GenerateFaces : MonoBehaviour {
 
     public void RebuildMesh()
     {
-        showMesh = true;
         mesh = new Mesh();
 
         circleSubdivisions = Mathf.Abs(circleSubdivisions);
@@ -37,7 +36,8 @@ public class GenerateFaces : MonoBehaviour {
 
         vertexArray = new Vector3[2 + ((4 + lengthSubdivisions) * circleSubdivisions)];
         //triangles = new int[circleSubdivisions * trisPerVerts];//fix number overflow (initialization of int can be a negative number, as is now)
-        triangles = new int[(2 + lengthSubdivisions) * circleSubdivisions * 6];//fix number overflow (initialization of int can be a negative number, as is now)
+        //triangles = new int[(2 + lengthSubdivisions) * circleSubdivisions * 6];//fix number overflow (initialization of int can be a negative number, as is now)
+        triangles = new int[circleSubdivisions * 12 + (lengthSubdivisions + 2) * circleSubdivisions * 6];
         uvs = new Vector2[vertexArray.Length];
 
         //the last two vertices in the array are reserved for the centerpoints of the top and bottom circles
@@ -118,8 +118,8 @@ public class GenerateFaces : MonoBehaviour {
                 triangles[triIndex + 2] = 0;
 
                 //build a triangle on the bottom circle from the last vertex on that circle
-                triangles[triIndex + 3] = vertIndex + circleSubdivisions;
-                triangles[triIndex + 4] = circleSubdivisions;
+                triangles[triIndex + 3] = vertIndex + (1 + lengthSubdivisions) * circleSubdivisions;
+                triangles[triIndex + 4] = circleSubdivisions * (lengthSubdivisions + 1);
                 triangles[triIndex + 5] = vertexArray.Length - 2;
             }
             else
@@ -141,28 +141,57 @@ public class GenerateFaces : MonoBehaviour {
         {
             for (int i = 0; i < circleSubdivisions; i++, triIndex += 6, vertIndex++)
             {
-                //build quad on the side from the last vertices of the circles
-                triangles[triIndex] = vertIndex;
-                triangles[triIndex + 1] = 0;
-                triangles[triIndex + 2] = circleSubdivisions;
-                triangles[triIndex + 3] = vertIndex;
-                triangles[triIndex + 4] = circleSubdivisions;
-                triangles[triIndex + 5] = vertIndex + circleSubdivisions;
-
-                /*
-                triangles[triIndex + 6 + i * 6] = vertIndex + i * circleSubdivisions;
-                triangles[triIndex + 7 + i * 6] = vertIndex + 1 + i * circleSubdivisions;
-                triangles[triIndex + 8 + i * 6] = vertIndex + circleSubdivisions + 1 + i * circleSubdivisions;
-                triangles[triIndex + 9 + i * 6] = vertIndex + i * circleSubdivisions;
-                triangles[triIndex + 10 + i * 6] = vertIndex + circleSubdivisions + 1 + i * circleSubdivisions;
-                triangles[triIndex + 11 + i * 6] = vertIndex + circleSubdivisions + i * circleSubdivisions;
-                */
+                Debug.Log("144vertIndex: " + vertIndex + ", triIndex: " + triIndex + ", i: " + i + ", j: " + j);
+                if ((vertIndex + 1) % circleSubdivisions == 0)//if we're at the last vertex of the circle
+                {
+                    //build quad on the side from the last vertices of the circles
+                    triangles[triIndex] = vertIndex;
+                    Debug.Log("148triangles.length: " + triangles.Length + ", triIndex: " + triIndex + ", i: " + i + ", j: " + j);
+                    if (j != 0)
+                    {
+                        int temp = vertIndex / j;
+                        triangles[triIndex + 1] = temp;
+                        triangles[triIndex + 2] = circleSubdivisions + temp;
+                        triangles[triIndex + 4] = circleSubdivisions + temp;
+                        triangles[triIndex + 5] = vertIndex + circleSubdivisions + temp;
+                    }
+                    else
+                    {
+                        triangles[triIndex + 1] = 0;
+                        triangles[triIndex + 2] = circleSubdivisions;
+                        triangles[triIndex + 4] = circleSubdivisions;
+                        triangles[triIndex + 5] = vertIndex + circleSubdivisions;
+                    }
+                    triangles[triIndex + 3] = vertIndex;
+                    
+                    /*
+                    triangles[triIndex + 6] = vertIndex;
+                    triangles[triIndex + 7] = vertIndex + 1;
+                    triangles[triIndex + 8] = vertIndex + circleSubdivisions + 1;
+                    triangles[triIndex + 9] = vertIndex;
+                    triangles[triIndex + 10] = vertIndex + circleSubdivisions + 1;
+                    triangles[triIndex + 11] = vertIndex + circleSubdivisions;
+                    */
+                }
+                else
+                {
+                    //build quad on the side
+                    Debug.Log("178triangles.length: " + triangles.Length + ", triIndex: " + triIndex + ", i: " + i + ", j: " + j);
+                    triangles[triIndex] = vertIndex;
+                    triangles[triIndex + 1] = vertIndex + 1;
+                    triangles[triIndex + 2] = vertIndex + circleSubdivisions + 1;
+                    triangles[triIndex + 3] = vertIndex;
+                    triangles[triIndex + 4] = vertIndex + circleSubdivisions + 1;
+                    triangles[triIndex + 5] = vertIndex + circleSubdivisions;
+                }
             }
         }
 
+        //create different uv for-loops: one for the circles and one for the sidequads
         for (int i = 0; i < uvs.Length; i++)
         {
-            uvs[i] = new Vector2(vertexArray[i].x, vertexArray[i].z);
+            //uvs[i] = new Vector2(vertexArray[i].x, vertexArray[i].z);
+            uvs[i] = new Vector2(Mathf.Atan2(vertexArray[i].x, vertexArray[i].z) / (-2f * Mathf.PI), Mathf.Asin(vertexArray[i].y) / Mathf.PI + 0.5f);
         }
 
         //uvs[x + (gridX * y)] = new Vector2((float)x / (gridX - 1), (float)y / (gridY - 1));
@@ -205,12 +234,14 @@ public class GenerateFaces : MonoBehaviour {
 
     public void Update()
     {
-        RebuildMesh();
+        if (showMesh)
+        {
+            RebuildMesh();
+        }
     }
 
     public void ClearMesh()
     {
-        showMesh = false;
         mesh = new Mesh
         {
             vertices = new Vector3[0],

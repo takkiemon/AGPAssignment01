@@ -14,10 +14,12 @@ public class GenerateFacesEditor : Editor {
         GenerateFaces meshObject = (GenerateFaces)target;
         if (GUILayout.Button("rebuildMesh"))
         {
+            meshObject.showMesh = true;
             meshObject.RebuildMesh();
         }
         if (GUILayout.Button("clearMesh"))
         {
+            meshObject.showMesh = false;
             meshObject.ClearMesh();
         }
     }
