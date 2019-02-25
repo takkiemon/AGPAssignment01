@@ -17,6 +17,7 @@ public class GenerateFaces : MonoBehaviour {
     int[] triangles;
     Vector2[] uvs;
     float layerSteps;
+    float cornerAngle;
 
     void Start()
     {
@@ -27,6 +28,9 @@ public class GenerateFaces : MonoBehaviour {
 
     public void RebuildMesh()
     {
+
+        GetComponent<MeshFilter>().mesh = mesh;
+        mesh.Clear();
         mesh = new Mesh();
 
         circleSubdivisions = Mathf.Abs(circleSubdivisions);
@@ -44,11 +48,13 @@ public class GenerateFaces : MonoBehaviour {
         vertexArray[vertexArray.Length - 1] = new Vector3(0, .5f * height, 0);
         vertexArray[vertexArray.Length - 2] = new Vector3(0, -.5f * height, 0);
 
+
+
         for (int j = 0; j <= lengthSubdivisions + 1; j++)
         {
             for (int i = 0; i < circleSubdivisions; i++)
             {
-                float cornerAngle = (float)i / circleSubdivisions * 2 * Mathf.PI;
+                cornerAngle = (float)i / circleSubdivisions * 2 * Mathf.PI;
                 vertexArray[j * circleSubdivisions + i] = new Vector3(Mathf.Cos(cornerAngle) * radius, (-j * layerSteps + .5f) * height, Mathf.Sin(cornerAngle) * radius);
                 //vertexArray[i + circleSubdivisions] = new Vector3(Mathf.Cos(cornerAngle) * radius, -.5f * height, Mathf.Sin(cornerAngle) * radius);
             }
@@ -192,6 +198,10 @@ public class GenerateFaces : MonoBehaviour {
         {
             //uvs[i] = new Vector2(vertexArray[i].x, vertexArray[i].z);
             uvs[i] = new Vector2(Mathf.Atan2(vertexArray[i].x, vertexArray[i].z) / (-2f * Mathf.PI), Mathf.Asin(vertexArray[i].y) / Mathf.PI + 0.5f);
+            if (uvs[i].x < 0f)
+            {
+                uvs[i].x += 1f;
+            }
         }
 
         //uvs[x + (gridX * y)] = new Vector2((float)x / (gridX - 1), (float)y / (gridY - 1));
@@ -248,6 +258,7 @@ public class GenerateFaces : MonoBehaviour {
             triangles = new int[0]
         };
         GetComponent<MeshFilter>().mesh = mesh;
+        mesh.Clear();
     }
 
     private void OnDrawGizmos()//the ggizmo only displays the vertices of the local mesh variable and not 'GetComponent<MeshFilter>().mesh'
