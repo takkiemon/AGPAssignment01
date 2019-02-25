@@ -27,7 +27,6 @@ public class GenerateFaces : MonoBehaviour
     {
         showVertices = true;
         showMesh = true;
-        //RebuildMesh();
     }
 
     public void RebuildMesh()
@@ -48,7 +47,6 @@ public class GenerateFaces : MonoBehaviour
 
         for (int i = 0; i < resolution; i++)
         {
-            //Debug.Log("About to create vertex(" + Mathf.Cos(i / resolution * 2 * Mathf.PI) * radius + "(Mathf.Cos(" + i + " / " + resolution + " * 2 * Mathf.PI) * " + radius + "), 0, " + Mathf.Sin(i / resolution * 2 * Mathf.PI) * radius + "(Mathf.Sin(" + i + " / " + resolution + " * 2 * Mathf.PI) * " + radius + ")).");
             float cornerAngle = (float)i / resolution * 2 * Mathf.PI;
             circleVertexArray[i] = new Vector3(Mathf.Cos(cornerAngle) * radius, .5f * height, Mathf.Sin(cornerAngle) * radius);
             sideVertexArray[i] = circleVertexArray[i];
@@ -56,13 +54,11 @@ public class GenerateFaces : MonoBehaviour
             sideVertexArray[i + resolution] = circleVertexArray[i + resolution];
         }
 
-        //Debug.Log("triangleCount: " + triangles.Length + ", vertexCount: " + vertexArray.Length + ", resolution: " + resolution + ".");
-
         for (int triIndex = 0, vertIndex = 0; triIndex < circleTriangles.Length && vertIndex < circleVertexArray.Length; triIndex += 6, vertIndex++)
         {
             if (triIndex == (resolution - 1) * 6)//if we're at the last vertex of the circle
             {
-                /*/build a triangle on the top circle from the last vertex on that circle
+                //build a triangle on the top circle from the last vertex on that circle
                 circleTriangles[triIndex] = vertIndex;
                 circleTriangles[triIndex + 1] = 2 * (1 + resolution) - 1;
                 circleTriangles[triIndex + 2] = 0;
@@ -71,16 +67,6 @@ public class GenerateFaces : MonoBehaviour
                 circleTriangles[triIndex + 3] = vertIndex + resolution;
                 circleTriangles[triIndex + 4] = resolution;
                 circleTriangles[triIndex + 5] = 2 * (1 + resolution) - 2;
-                */
-                /*
-                //build quad on the side from the last vertices of the circles
-                circleTriangles[triIndex + 6] = vertIndex;
-                circleTriangles[triIndex + 7] = 0;
-                circleTriangles[triIndex + 8] = resolution;
-                circleTriangles[triIndex + 9] = vertIndex;
-                circleTriangles[triIndex + 10] = resolution;
-                circleTriangles[triIndex + 11] = vertIndex + resolution;
-                */
             }
             else
             {
@@ -93,16 +79,6 @@ public class GenerateFaces : MonoBehaviour
                 circleTriangles[triIndex + 3] = vertIndex + resolution;
                 circleTriangles[triIndex + 4] = vertIndex + resolution + 1;
                 circleTriangles[triIndex + 5] = 2 * (1 + resolution) - 2;
-
-                /*
-                //build quad on the side
-                circleTriangles[triIndex + 6] = vertIndex;
-                circleTriangles[triIndex + 7] = vertIndex + 1;
-                circleTriangles[triIndex + 8] = vertIndex + resolution + 1;
-                circleTriangles[triIndex + 9] = vertIndex;
-                circleTriangles[triIndex + 10] = vertIndex + resolution + 1;
-                circleTriangles[triIndex + 11] = vertIndex + resolution;
-                */
             }
         }
 
@@ -130,34 +106,6 @@ public class GenerateFaces : MonoBehaviour
                 sideTriangles[triIndex + 5] = vertIndex + resolution;
             }
         }
-
-        //uvs[x + (gridX * y)] = new Vector2((float)x / (gridX - 1), (float)y / (gridY - 1));
-
-        /*
-        for (int y = 0; y < vertexGridYSize; y++)
-        {
-            for (int x = 0; x < vertexGridXSize; x++)
-            {
-                vertexArray[y * vertexGridXSize + x] = new Vector3(x, y, 0);
-
-            }
-        }
-
-        for (int triIterator = 0, vertIterator = 0; vertIterator < (vertexGridXSize * (vertexGridYSize - 1) - 1); vertIterator++)
-        {
-            Debug.Log("t: " + triIterator + ", v: " + vertIterator + ". ");
-            if ((vertIterator + 1) % vertexGridXSize != 0)
-            {
-                triangles[triIterator] = vertIterator + 1;
-                triangles[triIterator + 1] = vertIterator + vertexGridXSize;
-                triangles[triIterator + 2] = vertIterator;
-                triangles[triIterator + 3] = vertIterator + 1;
-                triangles[triIterator + 4] = vertIterator + vertexGridXSize + 1;
-                triangles[triIterator + 5] = vertIterator + vertexGridXSize;
-                triIterator += 6;
-            }
-        }
-        */
 
         totalVertices = new Vector3[circleVertexArray.Length + sideVertexArray.Length];
         totalTriangles = new int[circleTriangles.Length + sideTriangles.Length];
